@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-# texfind
+
 Texture Finder SAMP
 =======
 # TexFind (Stable Deploy Build)
@@ -21,4 +20,3 @@ npm install
 npm start
 npm run deploy
 ```
->>>>>>> 67660bb (Initial)
