@@ -1,6 +1,6 @@
 {
   "name": "texfind",
-  "version": "2.1.0",
+  "version": "2.2.1",
   "private": true,
   "homepage": "https://dvberg.github.io/texfind",
   "dependencies": {
@@ -19,5 +19,17 @@
     "build": "react-scripts build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

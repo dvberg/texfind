@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/texfind/static/css/main.38e7eab3.css",
+    "main.js": "/texfind/static/js/main.e7e7e77d.js",
+    "index.html": "/texfind/index.html",
+    "main.38e7eab3.css.map": "/texfind/static/css/main.38e7eab3.css.map",
+    "main.e7e7e77d.js.map": "/texfind/static/js/main.e7e7e77d.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.38e7eab3.css",
+    "static/js/main.e7e7e77d.js"
+  ]
+}
