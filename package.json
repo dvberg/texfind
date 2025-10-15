@@ -4,15 +4,15 @@
   "private": true,
   "homepage": "https://dvberg.github.io/texfind",
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-scripts": "5.0.1",
+    "tailwindcss": "^3.4.18"
   },
   "devDependencies": {
-    "gh-pages": "^6.1.1",
     "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.41",
-    "tailwindcss": "^3.4.10"
+    "gh-pages": "^6.1.1",
+    "postcss": "^8.4.41"
   },
   "scripts": {
     "start": "react-scripts start",

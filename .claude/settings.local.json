@@ -5,7 +5,9 @@
       "WebSearch",
       "Bash(npm audit)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm audit fix:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

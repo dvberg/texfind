@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const APP_VERSION="2025.08.09-r1";
+const APP_VERSION="2025.10.15-r1";
 const LS_KEY_DATA="gtxd_textures_data";
 const FAV_KEY="gtxd_fav_folders";
 const UI_KEY="tf_ui_state";
@@ -50,6 +50,12 @@ export default function App(){
   },[]);
 
   const [dataset,setDataset]=useState(()=>{try{const raw=localStorage.getItem(LS_KEY_DATA);const p=raw?JSON.parse(raw):[];return Array.isArray(p)?p:[]}catch{return[]}});
+
+  useEffect(()=>{
+    if(dataset.length===0){
+      loadTexturesFromLocal();
+    }
+  },[]);
   const [favFolders,setFavFolders]=useState(()=>{try{const raw=localStorage.getItem(FAV_KEY);return raw?JSON.parse(raw):{folders:{Unfiled:[]},lastFolder:"Unfiled"};}catch{return{folders:{Unfiled:[]},lastFolder:"Unfiled"}}});
   useEffect(()=>{try{localStorage.setItem(FAV_KEY,JSON.stringify(favFolders));}catch{}},[favFolders]);
   useEffect(()=>{try{localStorage.setItem(LS_KEY_DATA,JSON.stringify(dataset));}catch{}},[dataset]);
@@ -66,6 +72,38 @@ export default function App(){
   const [toast,setToast]=useState(null);
   function showToast(kind,msg){setToast({type:kind,msg});window.clearTimeout(showToast._t);showToast._t=window.setTimeout(()=>setToast(null),3000);}
 
+  async function loadTexturesFromLocal(){
+    try{
+      const response=await fetch('/textures.csv');
+      if(!response.ok) throw new Error('Failed to load textures.csv');
+      const text=await response.text();
+      const rows=parseTable(text);
+      if(!rows.length) throw new Error("File kosong");
+      const header=rows[0].map(s=>String(s).trim().toLowerCase());
+      const col=(names)=>names.map(n=>String(n).toLowerCase()).map(n=>header.indexOf(n)).find(i=>i>=0);
+      const iM=col(["modelid","model_id","model id","model","id"]);
+      const iTxd=col(["txdname","txd","txd name","txd_name"]);
+      const iName=col(["texturename","texture name","texturename","name"]);
+      const iURL=col(["url","image","img"]);
+      if(iM==null||iTxd==null||iName==null) throw new Error("Header wajib: modelid, txdname, texturename (url opsional)");
+      const next=[]; let auto=1;
+      for(const r of rows.slice(1)){
+        if(r.every(c=>String(c).trim()==="")) continue;
+        const midRaw=r[iM]; const modelId=(midRaw==null||String(midRaw).trim()==="")?null:Number(midRaw);
+        const txdName=String(r[iTxd]??"").trim();
+        const textureName=String(r[iName]??"").trim();
+        const urlRaw=iURL!=null?String(r[iURL]??"").trim():"";
+        const url=urlRaw || (txdName&&textureName?`https://gtxd.net/images/gtasa_textures/${txdName}.${textureName}.png`:"");
+        if(!modelId||!txdName||!textureName) continue;
+        next.push({id:auto++,textureName,modelId,txdName,libraryName:"gta3.img",duplicateOf:null,urlEnc: btoa(url), tags:[]});
+      }
+      if(!next.length) throw new Error("Tidak ada baris valid");
+      setDataset(next); setQuery(""); setHideDupes(false); setPage(1);
+      showToast("success",`Berhasil memuat ${next.length} texture otomatis.`);
+      return next;
+    }catch(e){console.error(e);showToast("error",`Gagal load otomatis: ${e.message||e}`);return [];}
+  }
+
   const baseList=useMemo(()=>{
     if(view!=="favorites") return dataset;
     const keys=new Set((favFolders.folders?.[favViewFolder])||[]);
@@ -80,42 +118,7 @@ export default function App(){
   const total=filtered.length, maxPage=Math.max(1,Math.ceil(total/pageSize)), pageSafe=Math.min(page,maxPage);
   const items=paginate(filtered,pageSize,pageSafe);
 
-  function handleImport(ev){
-    const el=ev.target; const file=el.files?.[0]; if(!file) return;
-    const reader=new FileReader();
-    reader.onload=()=>{
-      try{
-        const text=String(reader.result||"");
-        const rows=parseTable(text);
-        if(!rows.length) throw new Error("File kosong");
-        const header=rows[0].map(s=>String(s).trim().toLowerCase());
-        const col=(names)=>names.map(n=>String(n).toLowerCase()).map(n=>header.indexOf(n)).find(i=>i>=0);
-        const iM=col(["modelid","model_id","model id","model","id"]);
-        const iTxd=col(["txdname","txd","txd name","txd_name"]);
-        const iName=col(["texturename","texture name","texturename","name"]);
-        const iURL=col(["url","image","img"]);
-        if(iM==null||iTxd==null||iName==null) throw new Error("Header wajib: modelid, txdname, texturename (url opsional)");
-        const next=[]; let auto=1;
-        for(const r of rows.slice(1)){
-          if(r.every(c=>String(c).trim()==="")) continue;
-          const midRaw=r[iM]; const modelId=(midRaw==null||String(midRaw).trim()==="")?null:Number(midRaw);
-          const txdName=String(r[iTxd]??"").trim();
-          const textureName=String(r[iName]??"").trim();
-          const urlRaw=iURL!=null?String(r[iURL]??"").trim():"";
-          const url=urlRaw || (txdName&&textureName?`https://gtxd.net/images/gtasa_textures/${txdName}.${textureName}.png`:"");
-          if(!modelId||!txdName||!textureName) continue;
-          next.push({id:auto++,textureName,modelId,txdName,libraryName:"gta3.img",duplicateOf:null,urlEnc: btoa(url), tags:[]});
-        }
-        if(!next.length) throw new Error("Tidak ada baris valid");
-        setDataset(next); setView("home"); setQuery(""); setHideDupes(false); setPage(1);
-        showToast("success",`Berhasil memuat ${next.length} data.`);
-      }catch(e){console.error(e);showToast("error",`Gagal import: ${e.message||e}`);} finally{el.value="";}
-    };
-    reader.onerror=()=>{showToast("error","Gagal membaca file"); el.value="";};
-    reader.readAsText(file);
-  }
-  function clearImported(){ setDataset([]); try{localStorage.removeItem(LS_KEY_DATA);}catch{} setPage(1); showToast("success","Dataset dikosongkan."); }
-
+  
   const folderNames=Object.keys(favFolders.folders||{});
   const keysOfActive=new Set((favFolders.folders?.[favViewFolder])||[]);
   function isFav(t){const k=favKeyOf(t); return keysOfActive.has(k) || Object.values(favFolders.folders).some(l=>l.includes(k));}
@@ -173,13 +176,11 @@ export default function App(){
 
     <main className="max-w-6xl mx-auto px-4 py-6">
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        {isHome && (<>
-          <label className={`px-3 py-2 rounded-xl cursor-pointer bg-neutral-900 border border-neutral-800`}>
-            <input type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain" className="hidden" onChange={handleImport}/>
-            Import Textures (CSV/TSV/TXT)
-          </label>
-          <button onClick={clearImported} className={`px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800`}>Clear data</button>
-        </>)}
+        {isHome && (
+          <span className={`px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800 text-sm opacity-70`}>
+            Data loaded automatically from textures.csv
+          </span>
+        )}
 
         {isFavs && (
           <div className="flex items-center gap-2 flex-wrap w-full">
@@ -198,7 +199,7 @@ export default function App(){
           </div>
         )}
 
-        <span className={`ml-auto text-xs opacity-70`}>Data source: {dataset.length?"imported":"empty"} • {dataset.length} rows</span>
+        <span className={`ml-auto text-xs opacity-70`}>Data source: textures.csv • {dataset.length} rows</span>
       </div>
 
       {dataset.length>0 && (
@@ -238,8 +239,8 @@ export default function App(){
         </div>
       ) : items.length===0 ? (
         <div className={`rounded-2xl p-8 text-center bg-neutral-900 border border-neutral-800`}>
-          <div className="text-sm opacity-80 mb-2">{dataset.length===0?"Belum ada data. Import CSV/TSV/TXT terlebih dulu.":"Tidak ada hasil yang cocok."}</div>
-          <div className="text-xs opacity-60">Coba ubah pencarian atau filter.</div>
+          <div className="text-sm opacity-80 mb-2">{dataset.length===0?"Loading textures...":"Tidak ada hasil yang cocok."}</div>
+          <div className="text-xs opacity-60">{dataset.length===0?"Memuat data dari textures.csv":"Coba ubah pencarian atau filter."}</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -406,7 +407,8 @@ export default function App(){
   }
 }
 
-function parseTable(text){
+
+  function parseTable(text){
   const first=(text.split(/\r?\n/)[0]||"").replace(/^\ufeff/,"");
   const counts={",":(first.match(/,/g)||[]).length,";":(first.match(/;/g)||[]).length,"\t":(first.match(/\t/g)||[]).length,"|":(first.match(/\|/g)||[]).length};
   const top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
