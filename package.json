@@ -1,6 +1,6 @@
 {
   "name": "texfind",
-  "version": "2.2.1",
+  "version": "2.1.0",
   "private": true,
   "homepage": "https://dvberg.github.io/texfind",
   "dependencies": {
