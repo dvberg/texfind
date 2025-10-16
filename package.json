@@ -2,8 +2,9 @@
   "name": "texfind",
   "version": "2.1.0",
   "private": true,
-  "homepage": "https://dvberg.github.io/texfind",
+  "homepage": "https://rezam5n.site",
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-scripts": "5.0.1",
